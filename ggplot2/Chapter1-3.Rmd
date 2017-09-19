@@ -1,0 +1,887 @@
+---
+title: "ggplot2 Chapter1-3"
+author: "Li Sun"
+date: "September 6, 2017"
+output: html_document
+---
+## Chapter1  
+### 1.3 What is the grammar of graphics?  
+The grammar tells us that a statistical graphic is a mapping from data to aesthetic attributes of geometric objects.  
+* Data  
+* Layers, made up of geomtric elements and statistical transformation.  
+* Scales  
+* Coordinate system  
+* Facet: how to break up the data into subsets and display those subsets as small multiples.  
+* Theme: controls the finer points of display, font size and background colour.  
+* ggplot2 can only create static graphics.  
+
+
+## Chapter 2 Getting started with ggplot2  
+###2.1 Introduction  
+###2.2 Fuel economy data  
+```{r}
+library(ggplot2)
+library(dplyr)
+#library(magrittr)
+mpg
+```  
+
+* `cty` and hwy record miles per gallon (mpg) for city and highway driving.  
+
+* `displ` is the engine displacement in litres.  
+
+* `drv` is the drive train: front wheel (f), rear wheel (r) or four wheel (4).  
+
+* `model` is the model of car. There are 38 models, selected because they had a new edition every year between 1999 and 2008.  
+
+* `class` (not shown), is a categorical variable describing the “type” of car: two seater, SUV, compact, etc.  
+
+
+### 2.3 Key components  
+1. data
+2. Aesthetic mappings between variables in data and visual properties.  
+3. Layer(s)  
+
+```{r}
+ggplot(mpg,aes(x=displ, y=hwy))+
+  geom_point()
+```  
+data: mpg  
+aesthetic mapping: engine size mapped to x position, fuel economy to y position.  
+layer: points  
+__data__ and __aesthetic__ mappings are supplied in ggplot(), then layers are added on with +.   
+
+### 2.4 Color, size, shape and other aesthetic attributes.  
+```{r}
+ggplot(mpg, aes(displ, cty, colour = class)) +
+  geom_point()
+```  
+This gives each point a unique colour corresponding to its class.  
+```{r}
+ggplot(mpg, aes(displ, hwy)) + geom_point(aes(colour = "blue"))
+ggplot(mpg, aes(displ, hwy)) + geom_point(colour = "blue")
+```  
+
+In the first plot, the value “blue” is scaled to a pinkish colour, and a legend is added. In the second plot, the points are given the R colour blue.  
+When using aesthetics in a plot, less is usually more.  
+
+### 2.5 Faceting  
+Faceting creates tables of graphics by splitting the data into subsets and displaying the same graph for each subset.  
+Wrapped is the most useful, so we’ll discuss it here, grid facetting later.  
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  facet_wrap(~class)
+```  
+
+### 2.6 Plot geoms  
+#### 2.6.1 Adding a smoother to a plot  
+```{r}
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth() #se = TRUE
+```  
+
+This overlays the scatterplot with a smooth curve, including an assessment of uncertainty in the form of point-wise confidence interval shown in grey.  
+* `method = 'loess'`, default for small n, uses a smooth local regression, the wiggliness of the line is controlled by the `span` parameter (0,1).  
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(span = 0.2)
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(span = 1)
+```  
+
+* `method = 'gam'` fits a generalised additive model provided by the mgcv package.  
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(method = "gam", formula = y ~ s(x))
+```  
+
+* `method = 'lm' fits a linear mdoel.  
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+```  
+
+* `method = "rlm"` works like lm(), but uses a robust fitting algorithm so that outliers don’t affect the fit as much.
+```{r}
+library(MASS)
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(method = "rlm")
+```  
+
+#### 2.6.2 Boxplots and jittered points  
+```{r}
+ggplot(mpg, aes(drv, hwy)) + 
+  geom_point()
+```  
+
+Jittering, `geom_jitter()`, adds a little random noise to the data which can help avoid overplotting.  
+```{r}
+ggplot(mpg, aes(drv, hwy)) + 
+  geom_jitter()
+```  
+Boxplots, `geom_boxplot()`, summarise the shape of the distribution with a handful of summary statistics.  
+```{r}
+ggplot(mpg, aes(drv, hwy)) + 
+  geom_boxplot()
+```  
+Violin plots, `geom_violin()`, show a compact representation of the “density” of the distribution, highlighting the areas where more points are found.  
+```{r}
+ggplot(mpg, aes(drv, hwy)) + 
+  geom_violin()
+```  
+
+#### 2.6.3 Histograms and frequency polygons  
+```{r}
+ggplot(mpg, aes(hwy)) + geom_histogram()
+```  
+```{r}
+ggplot(mpg, aes(hwy)) + geom_freqpoly()
+```  
+
+You should always try many bin widths, and you may find you need multiple bin widths to tell the full story of your data.  
+```{r}
+ggplot(mpg, aes(hwy)) + 
+  geom_freqpoly(binwidth = 2.5)
+```
+```{r}
+ggplot(mpg, aes(hwy)) + 
+  geom_freqpoly(binwidth = 1)
+```  
+
+I’m not a fan of density plots because they are harder
+to interpret since the underlying computations are more complex.  
+
+```{r}
+ggplot(mpg, aes(hwy)) + 
+  geom_density(binwidth = 1)
+```  
+
+```{r}
+ggplot(mpg, aes(displ, colour = drv)) + 
+  geom_freqpoly(binwidth = 0.5)
+ggplot(mpg, aes(displ, fill = drv)) + 
+  geom_histogram(binwidth = 0.5) + 
+  facet_wrap(~drv, ncol = 1)
+```  
+
+#### 2.6.4 Bar charts  
+unsummarised data:  
+
+```{r}
+ggplot(mpg, aes(manufacturer)) + 
+  geom_bar() 
+```  
+
+Presumarised data:  
+```{r}
+drugs <- data.frame(
+  drug = c("a", "b", "c"),
+  effect = c(4.2, 9.7, 6.1)
+  )
+
+ggplot(drugs, aes(drug, effect)) + 
+  geom_bar(stat = "identity")
+ggplot(drugs, aes(drug, effect)) + geom_point()
+```  
+
+#### 2.6.5 Time series with line and path plots  
+Line plots usually have time on the x-axis, showing how
+a single variable has changed over time. 
+```{r}
+ggplot(economics, aes(date, unemploy / pop)) + 
+  geom_line()
+
+ggplot(economics, aes(date, uempmed)) + 
+  geom_line()
+```  
+
+Path plots show how two variables have simultaneously changed over time, with time encoded in the way that observations are connected.  
+```{r}
+ggplot(economics, aes(unemploy / pop, uempmed)) + 
+  geom_path() + 
+  geom_point()
+```  
+Because of the many line crossings, the direction in which time flows isn’t easy to see in the first plot.  
+
+```{r}
+year <- function(x) as.POSIXlt(x)$year + 1900
+ggplot(economics, aes(unemploy / pop, uempmed)) + 
+  geom_path(colour = "grey50") + 
+  geom_point(aes(colour = year(date)))
+```  
+
+### 2.7 Modifying the axes  
+```{r}
+ggplot(mpg, aes(cty, hwy)) + 
+  geom_point(alpha = 1 / 3)
+
+ggplot(mpg, aes(cty, hwy)) + 
+  geom_point(alpha = 1 / 3) + 
+  xlab("city driving (mpg)") + 
+  ylab("highway driving (mpg)")
+
+# Remove the axis labels with NULL
+ggplot(mpg, aes(cty, hwy)) + 
+  geom_point(alpha = 1 / 3) + 
+  xlab(NULL) + 
+  ylab(NULL)
+
+```   
+
+xlim() and ylim() modify the limits of axes:  
+```{r}
+ggplot(mpg, aes(drv, hwy)) + 
+  geom_jitter(width = 0.25) 
+ggplot(mpg, aes(drv, hwy)) + 
+  geom_jitter(width = 0.25) + 
+  xlim("f", "r") + 
+  ylim(20, 30)
+ggplot(mpg, aes(drv, hwy)) + 
+  geom_jitter(width = 0.25, na.rm = TRUE) + 
+  ylim(NA, 30)
+```  
+
+You can suppress the associated warning with na.rm = TRUE.  
+
+### 2.8 Output  
+```{r}
+p <- ggplot(mpg, aes(displ, hwy, colour = factor(cyl))) + 
+  geom_point()
+```  
+Render it on screen, with print().  
+```{r}
+print(p)
+```  
+Save it to disk, with ggsave()  
+```{r}
+ggsave("plot.png", width = 5, height = 5)
+```  
+Briefly describe its structure with summary().  
+```{r}
+summary(p)
+```  
+Save a cached copy of it to disk, with `saveRDS()`. This saves a complete copy of the plot object, so you can easily re-create it with `readRDS()`.  
+
+### 2.9 Quick plots  
+```{r}
+qplot(displ, hwy, data = mpg)
+qplot(displ, data = mpg)
+```  
+Unless otherwise specified, qplot() tries to pick a sensible geometry and statistic based on the arguments provided.  
+
+If you want to set an aesthetic to a constant, you need to use `I()`:  
+```{r}
+qplot(displ, hwy, data = mpg, colour = "blue")
+qplot(displ, hwy, data = mpg, colour = I("blue"))
+```
+
+
+
+
+## Chapter3 Toolbox  
+### 3.1 Introduction  
+### 3.2 Basic plot types  
+Each of these geoms is two dimensional and requires both x and y aesthetics.  
+All of them understand colour (or color) and size aesthetics, and the filled geoms (bar, tile and polygon) also understand fill.  
+```{r}
+df <- data.frame(
+  x = c(3, 1, 5),
+  y = c(2, 4, 6),
+  label = c("a","b","c")
+  )
+p <- ggplot(df, aes(x, y, label = label)) + 
+  labs(x = NULL, y = NULL) + # Hide axis label 
+  theme(plot.title = element_text(size = 12)) # Shrink plot title
+```   
+
+* geom_area() draws an area plot, which is a line plot filled to the y-axis (filled lines). Multiple groups will be stacked on top of each other.  
+```{r}
+p + geom_area() + ggtitle("area")
+```  
+
+* `geom_bar(stat = "identity")`makes a barchart. We need `stat = "identity"` because the default stat automatically counts values (so is essentially a 1d geom. The identity stat leaves the data unchanged. Multiple bars in the same location will be stacked on top of one another.  
+```{r}
+p + geom_bar(stat = "identity") + ggtitle("bar")
+```  
+
+* `geom_line()` makes a line plot. The group aesthetic determines which observations are connected  
+```{r}
+p + geom_line() + ggtitle("line")
+```  
+
+* geom_path() is similar to a geom_line(), but lines are connected in the order they appear in the data, not from left to right.  
+```{r}
+p + geom_path() + ggtitle("path")
+```  
+
+* `geom_point()` produces a scatterplot. geom_point() also understands the shape aesthetic.  
+
+```{r}
+p + geom_point() + ggtitle("point")
+```  
+
+* geom_polygon() draws polygons, which are filled paths.  
+
+```{r}
+p + geom_polygon() + ggtitle("polygon")
+```  
+
+* `geom_rect()` is parameterised by the four corners of the rectangle, `xmin, ymin, xmax and ymax`. `geom_tile()` is exactly the same, but parameterised by the center of the rect and its size, `x, y, width and height`.  
+`geom_raster()` is a fast special case of `geom_tile()` used when all the tiles are the same size.  
+
+```{r}
+p + geom_tile() + ggtitle("raster")
+```  
+
+### 3.3 Lables  
+`geom_text()` has the most aesthetics of any geom  
+* `family` gives the name of a font.  
+```{r}
+df <- data.frame(x = 1, y = 3:1, family = c("sans", "serif", "mono"))
+ggplot(df, aes(x, y)) + 
+  geom_text(aes(label = family, family = family))
+```  
+
+* `fontface` specifies the face: “plain” (the default), “bold” or “italic”.  
+```{r}
+df <- data.frame(x = 1, y = 3:1, face = c("plain", "bold", "italic"))
+ggplot(df, aes(x, y)) + 
+  geom_text(aes(label = face, fontface = face))
+```  
+
+You can adjust the alignment of the text with the hjust (“left”, “center”, “right”, “inward”, “outward”) and vjust (“bottom”, “middle”, “top”, “inward”, “outward”) aesthetics.  
+```{r}
+df <- data.frame( 
+  x = c(1, 1, 2, 2, 1.5), 
+  y = c(1, 2, 1, 2, 1.5), 
+  text = c( 
+    "bottom-left", "bottom-right", 
+    "top-left", "top-right", "center"
+    )
+  )
+ggplot(df, aes(x, y)) + 
+  geom_text(aes(label = text)) 
+ggplot(df, aes(x, y)) + 
+  geom_text(aes(label = text), vjust = "inward", hjust = 
+              "inward")
+```  
+
+
+* `size` controls the font size.  
+* `angle` specifies the rotation of the text in degrees.  
+
+* The `nudge_x` and `nudge_y` parameters allow you to nudge the text a little horizontally or vertically:  
+```{r}
+df <- data.frame(trt = c("a", "b", "c"), resp = c(1.2, 3.4, 2.5))
+ggplot(df, aes(resp, trt)) + 
+  geom_point() + 
+  geom_text(aes(label = paste0("(", resp, ")")), nudge_y = -0.25) + 
+  xlim(1, 3.6)
+```  
+
+* If `check_overlap = TRUE`, overlapping labels will be automatically removed.  
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_text(aes(label = model)) + 
+  xlim(1, 8)
+ggplot(mpg, aes(displ, hwy)) +
+  geom_text(aes(label = model), check_overlap = TRUE) +
+  xlim(1, 8)
+```  
+
+
+A variation on `geom_text()` is `geom_label()`: it draws a rounded rectangle behind the text. This makes it useful for adding labels to plots with busy backgrounds:  
+```{r}
+label <- data.frame(
+  waiting = c(55, 80),
+  eruptions = c(2, 4.3),
+  label = c("peak one", "peak two")
+  )
+ggplot(faithfuld, aes(waiting, eruptions)) +
+  geom_tile(aes(fill = density)) +
+  geom_label(data = label, aes(label = label))
+```  
+
+```{r}
+ggplot(mpg, aes(displ, hwy, colour = class)) +
+  geom_point()
+ggplot(mpg, aes(displ, hwy, colour = class)) +
+  geom_point(show.legend = FALSE) +
+  directlabels::geom_dl(aes(label = class), method =
+                          "smart.grid")
+```  
+
+
+### 3.4 Annotations  
+* `geom_text()` to add text descriptions or to label points  
+
+* `geom_rect()` to highlight interesting rectangular regions of the plot.  
+
+* `geom_line()`, `geom_path()` and `geom_segment()` to add lines.  
+```{r}
+ggplot(economics, aes(date, unemploy)) + 
+  geom_line()
+```  
+
+* `geom_vline()`, `geom_hline()` and `geom_abline()` allow you to add reference lines (sometimes called rules), that span the full range of the plot.  
+```{r}
+presidential <- subset(presidential, start > economics$date[1])
+ggplot(economics) + 
+  geom_rect(
+    aes(xmin = start, xmax = end, fill = party),
+    ymin = -Inf, ymax = Inf, alpha = 0.2,
+    data = presidential
+    ) +
+  geom_vline(
+    aes(xintercept = as.numeric(start)),
+    data = presidential,
+    colour = "grey50", alpha = 0.5
+    ) +
+  geom_text(
+    aes(x = start, y = 2500, label = name),
+    data = presidential,
+    size = 3, vjust = 0, hjust = 0, nudge_x = 50
+    ) +
+  geom_line(aes(date, unemploy)) +
+  scale_fill_manual(values = c("blue", "red"))
+```  
+
+```{r}
+yrng <- range(economics$unemploy)
+xrng <- range(economics$date)
+caption <- paste(strwrap("Unemployment rates in the US have
+                         varied a lot over the years", 40),
+                 collapse = "\n")
+ggplot(economics, aes(date, unemploy)) +
+  geom_line() +
+  geom_text(
+    aes(x, y, label = caption),
+    data = data.frame(x = xrng[1], y = yrng[2], caption = caption),
+    hjust = 0, vjust = 1, size = 4
+    )
+```  
+
+It’s easier to use the `annotate()` helper function which creates the data frame for you:  
+```{r}
+ggplot(economics, aes(date, unemploy)) + 
+  geom_line() + 
+  annotate("text", x = xrng[1], y = yrng[2], label = caption,hjust = 0, vjust = 1, size = 4 
+           )
+```  
+
+it’s much easier to see the subtle differences if we add a reference line.  
+
+```{r}
+ggplot(diamonds, aes(log10(carat), log10(price))) + 
+  geom_bin2d() + 
+  facet_wrap(~cut, nrow = 1)
+
+
+mod_coef <- coef(lm(log10(price) ~ log10(carat), data = diamonds))
+ggplot(diamonds, aes(log10(carat), log10(price))) + 
+  geom_bin2d() + 
+  geom_abline(intercept = mod_coef[1], slope = mod_coef[2], 
+              colour = "white", size = 1) + 
+  facet_wrap(~cut, nrow = 1)
+```  
+
+### 3.5 Collective geoms  
+An __individual__ geom draws a distinct graphical object for each observation (row). For example, the point geom draws one point per row. A __collective__ geom displays multiple observations with one geometric object.  
+
+By default, the `group` aesthetic is mapped to the interaction of all discrete variables in the plot.  
+```{r}
+data(Oxboys, package = "nlme")
+head(Oxboys)
+```  
+
+#### 3.5.1 Multiple groups, one aesthetic  
+you want to be able to distinguish individual subjects, but not identify them.  
+```{r}
+ggplot(Oxboys, aes(age, height, group = Subject)) +
+  geom_point() + 
+  geom_line()
+```   
+
+Incorrect:  
+```{r}
+ggplot(Oxboys, aes(age, height)) + 
+  geom_point() + 
+  geom_line()
+```  
+
+#### 3.5.2 Different groups on different layers  
+
+showing the overall trend for all boys.  
+```{r}
+ggplot(Oxboys, aes(age, height, group = Subject)) + 
+  geom_line() + 
+  geom_smooth(method = "lm", se = FALSE)
+```  
+
+Instead of setting the grouping aesthetic in ggplot(), where it will apply to all layers, we set it in geom_line() so it applies only to the lines.  
+
+```{r}
+ggplot(Oxboys, aes(age, height)) + 
+  geom_line(aes(group = Subject)) + 
+  geom_smooth(method = "lm", size = 2, se = FALSE)
+```  
+
+#### 3.5.3 Overriding the default grouping  
+```{r}
+ggplot(Oxboys, aes(Occasion, height)) + 
+  geom_boxplot()
+```  
+
+Now we want to overlay lines that connect each individual boy. Simply adding geom_line() does not work: the lines are drawn within each occassion, not across each subject.  
+```{r}
+ggplot(Oxboys, aes(Occasion, height)) + 
+  geom_boxplot() + 
+  geom_line(colour = "#3366FF", alpha = 0.5)
+```
+
+we need to override the grouping to say we want one line per boy:  
+```{r}
+ggplot(Oxboys, aes(Occasion, height)) + 
+  geom_boxplot() + 
+  geom_line(aes(group = Subject), colour = "#3366FF", alpha = 0.5)
+```  
+
+#### 3.5.4 Matching aesthetics to graphic objects  
+There is one more observation than line segment, and so the aesthetic for the first observation is used for the first segment, the second observation for the second segment
+and so on.This means that the aesthetic for the last observation is not used:  
+```{r}
+df <- data.frame(x = 1:3, y = 1:3, colour = c(1,3,5))
+ggplot(df, aes(x, y, colour = factor(colour))) +
+  geom_line(aes(group = 1), size = 2) + 
+  geom_point(size = 5)
+ggplot(df, aes(x, y, colour = colour)) +
+  geom_line(aes(group = 1), size = 2) +
+  geom_point(size = 5)
+```  
+you can perform the linear interpolation yourself:  
+```{r}
+xgrid <- with(df, seq(min(x), max(x), length = 50))
+interp <- data.frame( 
+  x = xgrid,
+  y = approx(df$x, df$y, xout = xgrid)$y,
+  colour = approx(df$x, df$colour, xout = xgrid)$y
+  )
+ggplot(interp, aes(x, y, colour = colour)) +
+  geom_line(size = 2) +
+  geom_point(data = df, size = 5)
+```   
+
+
+how would you colour a polygon that had a different fill colour for each point on its border?  
+```{r}
+ggplot(mpg, aes(class)) + 
+  geom_bar()
+ggplot(mpg, aes(class, fill = drv)) + 
+  geom_bar()
+```  
+
+If you try to map fill to a continuous variable in the same way, it doesn’t work.  
+To show multiple colours, we need multiple bars for each class, which we can get by overriding the grouping:  
+```{r}
+ggplot(mpg, aes(class, fill = hwy)) + 
+  geom_bar()
+ggplot(mpg, aes(class, fill = hwy, group = hwy)) +
+  geom_bar()
+```  
+
+### 3.6 Surface plots  
+```{r}
+ggplot(faithfuld, aes(eruptions, waiting)) + 
+  geom_contour(aes(z = density, colour = ..level..))
+ggplot(faithfuld, aes(eruptions, waiting))+
+  geom_raster(aes(fill = density))
+```    
+
+Bubble plots work better with fewer observations
+```{r}
+small <- faithfuld[seq(1, nrow(faithfuld), by = 10), ]
+ggplot(small, aes(eruptions, waiting)) +
+  geom_point(aes(size = density), alpha = 1/3) +
+  scale_size_area()
+```  
+
+
+### 3.7 Drawing maps  
+#### 3.7.1 Vector boundaries  
+Vector boundaries are defined by a data frame with one row for each “corner” of a geographical region like a country, state, or county. It requires four variables:  
+* `lat` and `long`, giving the location of a point.  
+* `group`, a unique identifier for each contiguous region.  
+* `id`, the name of the region.  
+
+```{r}
+#mi_counties <- ggplot2::map_data("county", "michigan") %>% 
+#  select(lon = long, lat, group, id = subregion)
+#head(mi_counties)
+#ggplot(mi_counties, aes(lon, lat)) +
+#  geom_polygon(aes(group = group)) +
+#  coord_quickmap()
+#ggplot(mi_counties, aes(lon, lat)) +
+#  geom_polygon(aes(group = group), fill = NA, colour = "grey50") +
+#  coord_quickmap()
+```  
+
+
+#### 3.7.2 Point metadata  
+```{r}
+#mi_cities <- maps::us.cities %>%
+#  tbl_df() %>%
+#  filter(country.etc == "MI") %>%
+#  select(-country.etc, lon = long) %>%
+#  arrange(desc(pop))
+#mi_cities
+```  
+It’s not terribly useful without a reference. You almost always combine point metadata with another layer to make it interpretable.  
+
+```{r}
+#ggplot(mi_cities, aes(lon, lat)) +
+#  geom_point(aes(size = pop)) +
+#  scale_size_area() +
+#  coord_quickmap()
+#ggplot(mi_cities, aes(lon, lat)) +
+#  geom_polygon(aes(group = group), mi_counties, fill = NA, colour = "grey50") +
+#  geom_point(aes(size = pop), colour = "red") +
+#  scale_size_area() +
+#  coord_quickmap()
+```  
+
+#### 3.7.3 Raster images  
+
+### 3.8 Revealing uncertainty  
+* Discrete x, range: `geom_errorbar`, `geom_linerange()` 
+```{r}
+y <- c(18, 11, 16)
+df <- data.frame(x = 1:3, y = y, se = c(1.2, 0.5, 1.0))
+base <- ggplot(df, aes(x, y, ymin = y - se, ymax = y + se))
+base + geom_errorbar()
+base + geom_linerange()
+```
+* Discrete x, range & center:  `geom_crossbar()`,`geom_pointrange()`  
+```{r}
+base + geom_crossbar()
+base + geom_pointrange()
+```  
+
+* Continuous x, range: `geom_ribbon()`  
+```{r}
+base + geom_ribbon()
+```  
+
+* Continuous x, range & center: `geom_smooth(stat = "identity")`  
+```{r}
+base + geom_smooth(stat = "identity")
+```  
+
+
+### 3.9 Weighted data  
+There are two aesthetic attributes that can be used to adjust for weights. Firstly, for simple geoms like lines and points, use the size aesthetic:  
+
+Unweighted  
+```{r}
+ggplot(midwest, aes(percwhite, percbelowpoverty)) + 
+  geom_point()
+```  
+Weight by population  
+```{r}
+ggplot(midwest, aes(percwhite, percbelowpoverty)) +
+  geom_point(aes(size = poptotal / 1e6)) +
+  scale_size_area("Population\n(millions)", breaks = c(0.5, 1, 2, 4))
+```
+
+These weights will be passed on to the statistical summary function.  
+Unweighted
+```{r}
+ggplot(midwest, aes(percwhite, percbelowpoverty)) +
+  geom_point() +
+  geom_smooth(method = lm, size = 1)
+```  
+
+Weighted by population  
+```{r}
+ggplot(midwest, aes(percwhite, percbelowpoverty)) +
+  geom_point(aes(size = poptotal / 1e6)) +
+  geom_smooth(aes(weight = poptotal), method = lm, size = 1) +
+  scale_size_area(guide = "none")
+```  
+
+The following code shows the difference this makes for a histogram of the percentage below the poverty line:  
+```{r}
+ggplot(midwest, aes(percbelowpoverty)) +
+  geom_histogram(binwidth = 1) +
+  ylab("Counties")
+ggplot(midwest, aes(percbelowpoverty)) +
+  geom_histogram(aes(weight = poptotal), binwidth = 1) +
+  ylab("Population (1000s)")
+```  
+
+### 3.10 Diamonds data  
+```{r}
+diamonds
+```  
+
+### 3.11 Displaying distributions  
+For 1d continuous distributions the most important geom is the histogram, `geom_histogram()`:  
+```{r}
+ggplot(diamonds, aes(depth)) +
+  geom_histogram()
+
+ggplot(diamonds, aes(depth)) +
+  geom_histogram(binwidth = 0.1) +
+  xlim(55, 70)
+```  
+
+If you want to compare the distribution between groups, you have a few options:  
+* Show small multiples of the histogram, facet_wrap(~ var).  
+
+* Use colour and a frequency polygon, geom_freqpoly().  
+TODO: add na.rm back  
+```{r}
+ggplot(diamonds, aes(depth)) +
+  geom_freqpoly(aes(colour = cut), binwidth = 0.1) +
+  xlim(58, 68) +
+  theme(legend.position = "none")
+```
+
+* Use a “conditional density plot”, geom_histogram(position = "fill").  
+```{r}
+ggplot(diamonds, aes(depth)) + 
+  geom_histogram(aes(fill = cut), binwidth = 0.1, position = "fill") +
+  xlim(58, 68) +
+  theme()
+```  
+
+An alternative to a bin-based visualisation is a density estimate.  
+`geom_density(`) places a little normal distribution at each data point and sums up all the curves.  
+```{r}
+ggplot(diamonds, aes(depth)) + 
+  geom_density(na.rm = TRUE) +
+  xlim(58, 68) +
+  theme()
+
+ggplot(diamonds, aes(depth, fill = cut, colour = cut)) +
+  geom_density(alpha = 0.2, na.rm = TRUE) +
+  xlim(58, 68) +
+  theme()
+```  
+
+sometimes you want to compare many distributions, and it’s useful to have alternative options that sacrifice quality for
+quantity. Here are three options:
+* `geom_boxplot()`: the box-and-whisker plot shows five summary statistics along with individual “outliers”.  
+```{r}
+ggplot(diamonds, aes(clarity, depth)) + 
+  geom_boxplot()
+ggplot(diamonds, aes(carat, depth)) +
+  geom_boxplot(aes(group = cut_width(carat, 0.1))) +
+  xlim(NA, 2.05)
+```  
+
+* `geom_violin()`: the violin plot is a compact version of the density plot.  
+```{r}
+ggplot(diamonds, aes(clarity, depth)) + 
+  geom_violin()
+ggplot(diamonds, aes(carat, depth)) +
+  geom_violin(aes(group = cut_width(carat, 0.1))) +
+  xlim(NA, 2.05)
+```  
+
+* `geom_dotplot()`: draws one point for each observation  
+
+
+### 3.12 Dealing with overplotting  
+* Very small amounts of overplotting can sometimes be alleviated by making the points smaller, or using hollow glyphs.  
+```{r}
+df <- data.frame(x = rnorm(2000), y = rnorm(2000))
+norm <- ggplot(df, aes(x, y)) + xlab(NULL) + ylab(NULL)
+norm + geom_point()
+norm + geom_point(shape = 1) # Hollow circles
+norm + geom_point(shape = ".") # Pixel sized
+```  
+
+* For larger datasets with more overplotting, you can use alpha blending (transparency) to make the points transparent.
+  
+  
+```{r}
+norm + geom_point(alpha = 1 / 3)
+norm + geom_point(alpha = 1 / 5)
+norm + geom_point(alpha = 1 / 10)
+```  
+
+* you can randomly jitter the points to alleviate some overlaps with `geom_jitter()`.  
+
+* Bin the points and count the number in each bin, then visualise that count (the 2d generalisation of the histogram), geom_bin2d().  
+```{r}
+norm + geom_bin2d()
+norm + geom_bin2d(bins = 10)
+norm + geom_hex()
+norm + geom_hex(bins = 10)
+```   
+
+### 3.13 Statistical summaries  
+
+how we can count the number of diamonds in each bin:  
+```{r}
+ggplot(diamonds, aes(color)) + 
+  geom_bar()
+ggplot(diamonds, aes(color, price)) +
+  geom_bar(stat = "summary_bin", fun.y = mean)
+```  
+
+add na.rm back  
+```{r}
+ggplot(diamonds, aes(table, depth)) + 
+  geom_bin2d(binwidth = 1) +
+  xlim(50, 70) +
+  ylim(50, 70)
+ggplot(diamonds, aes(table, depth, z = price)) +
+  geom_raster(binwidth = 1, stat = "summary_2d", fun = mean) +
+  xlim(50, 70) +
+  ylim(50, 70)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
