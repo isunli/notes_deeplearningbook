@@ -1,0 +1,746 @@
+---
+title: "Chapter6-7"
+author: "Li Sun"
+date: "September 26, 2017"
+output: html_document
+---
+
+## Chapter6 Scales, axes and legends  
+### 6.1 Introduction  
+
+### 6.2 Modifying scales  
+```{r}
+library(ggplot2)
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class))
+
+##Default
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  scale_x_continuous() +
+  scale_y_continuous() +
+  scale_colour_discrete()
+
+
+##override some default  
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  scale_x_continuous("A really awesome x axis label") +
+  scale_y_continuous("An amazingly great y axis label")
+
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  scale_x_continuous("Label 1") +
+  scale_x_continuous("Label 2")
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  scale_x_continuous("Label 2")
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  scale_x_sqrt() +
+  scale_colour_brewer()
+```  
+scale_The name of the aesthetic (e.g., colour, shape or x)  
+
+or  
+
+scale_The name of the scale (e.g., continuous, discrete, brewer).  
+
+### 6.3 Guides: legends and axes  
+Guides allow you to
+read observations from the plot and map them back to their original values.  
+
+#### 6.3.1 Scale title  
+```{r}
+df <- data.frame(x = 1:2, y = 1, z = "a")
+p <- ggplot(df, aes(x, y)) + geom_point()
+p + scale_x_continuous("X axis")
+p + scale_x_continuous(quote(a + mathematical ^ expression))
+
+p <- ggplot(df, aes(x, y)) + geom_point(aes(colour = z))
+p +
+  xlab("X axis") +
+  ylab("Y axis")
+p + labs(x = "X axis", y = "Y axis", colour =
+           "Colour\nlegend")
+
+## no label
+p <- ggplot(df, aes(x, y)) + 
+  geom_point() +
+  theme(plot.background = element_rect(colour = "grey50"))
+p + labs(x = "", y = "")
+p + labs(x = NULL, y = NULL)
+```  
+
+
+#### 6.3.2 Breaks and labels  
+The breaks argument controls which values appear as tick marks on axes and keys on legends.  
+```{r}
+df <- data.frame(x = c(1, 3, 5) * 1000, y = 1)
+axs <- ggplot(df, aes(x, y)) +
+  geom_point() +
+  labs(x = NULL, y = NULL)
+axs
+axs + scale_x_continuous(breaks = c(2000, 4000))
+axs + scale_x_continuous(breaks = c(2000, 4000), labels = c("2k", "4k"))  
+
+
+
+leg <- ggplot(df, aes(y, x, fill = x)) +
+  geom_tile() +
+  labs(x = NULL, y = NULL)
+leg
+leg + scale_fill_continuous(breaks = c(2000, 4000))
+leg + scale_fill_continuous(breaks = c(2000, 4000), labels = c("2k", "4k"))
+```  
+
+If you want to relabel the breaks in a categorical scale, you can use a named labels vector:  
+```{r}
+df2 <- data.frame(x = 1:3, y = c("a", "b", "c"))
+ggplot(df2, aes(x, y)) +
+  geom_point()
+ggplot(df2, aes(x, y)) +
+  geom_point() +
+  scale_y_discrete(labels = c(a = "apple", b = "banana", c = "carrot"))
+
+axs + scale_x_continuous(breaks = NULL)
+axs + scale_x_continuous(labels = NULL)
+
+leg + scale_fill_continuous(breaks = NULL)
+leg + scale_fill_continuous(labels = NULL)
+```  
+
+The scales package provides a number of useful labelling functions:  
+```{r}
+axs + scale_y_continuous(labels = scales::percent_format())
+axs + scale_y_continuous(labels = scales::dollar_format("$"))
+leg + scale_fill_continuous(labels = scales::unit_format("k", 1e-3))
+```  
+
+
+```{r}
+df <- data.frame(x = c(2, 3, 5, 10, 200, 3000), y = 1)
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  scale_x_log10()
+mb <- as.numeric(1:10 %o% 10 ^ (0:4))
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  scale_x_log10(minor_breaks = log10(mb))
+```  
+
+### 6.4 Legends  
+#### 6.4.1 Layers and legends  
+
+```{r}
+df <- data.frame(x=0,y = c(1, 2, 3), z=c('a','b','c'))
+ggplot(df, aes(y, y)) +
+  geom_point(size = 4, colour = "grey20") +
+  geom_point(aes(colour = z), size = 2)
+ggplot(df, aes(y, y)) +
+  geom_point(size = 4, colour = "grey20", show.legend = TRUE) +
+  geom_point(aes(colour = z), size = 2)
+
+norm <- data.frame(x = rnorm(1000), y = rnorm(1000))
+norm$z <- cut(norm$x, 3, labels = c("a", "b", "c"))
+ggplot(norm, aes(x, y)) +
+  geom_point(aes(colour = z), alpha = 0.1)
+ggplot(norm, aes(x, y)) +
+  geom_point(aes(colour = z), alpha = 0.1) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+ggplot(df, aes(x, y)) + geom_point(aes(colour = z))
+ggplot(df, aes(x, y)) + geom_point(aes(shape = z))
+ggplot(df, aes(x, y)) + geom_point(aes(shape = z, colour = z))
+```  
+
+
+#### 6.4.2 Legend layout  
+```{r}
+df <- data.frame(x = 1:3, y = 1:3, z = c("a", "b", "c"))
+base <- ggplot(df, aes(x, y)) +
+  geom_point(aes(colour = z), size = 3) +
+  xlab(NULL) +
+  ylab(NULL)
+base + theme(legend.position = "right") # the default
+base + theme(legend.position = "bottom")
+base + theme(legend.position = "none")
+```
+`legend.direction`: layout of items in legends (“horizontal” or “vertical”)
+`legend.box`: arrangement of multiple legends (“horizontal” or “vertical”)
+`legend.box.just`: justification of each legend within the overall bounding box, when there are multiple legends (“top”, “bottom”, “left”, or “right”)  
+```{r}
+base <- ggplot(df, aes(x, y)) +
+  geom_point(aes(colour = z), size = 3)
+base + theme(legend.position = c(0, 1), legend.justification = c(0, 1))
+base + theme(legend.position = c(0.5, 0.5), legend.justification = c(0.5, 0.5))
+base + theme(legend.position = c(1, 0), legend.justification = c(1, 0))
+```  
+
+
+#### 6.4.3 Guide functions  
+```{r}
+df <- data.frame(x = 1, y = 1:3, z = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_raster(aes(fill = z))
+base
+base + scale_fill_continuous(guide = guide_legend())
+base + guides(fill = guide_legend())
+```  
+
+##### 6.4.3.1 `guide_legend()`  
+The legend guide displays individual keys in a table.  
+
+```{r}
+df <- data.frame(x = 1, y = 1:4, z = letters[1:4])
+# Base plot
+p <- ggplot(df, aes(x, y)) + geom_raster(aes(fill = z))
+p
+p + guides(fill = guide_legend(ncol = 2))
+p + guides(fill = guide_legend(ncol = 2, byrow = TRUE))
+
+p <- ggplot(df, aes(1, y)) + geom_bar(stat = "identity", aes(fill = z))
+p
+p + guides(fill = guide_legend(reverse = TRUE))
+```  
+
+
+##### 6.4.3.2 `guide_colourbar`  
+```{r}
+df <- data.frame(x = 1, y = 1:4, z = 4:1)
+p <- ggplot(df, aes(x, y)) + geom_tile(aes(fill = z))
+p
+p + guides(fill = guide_colorbar(reverse = TRUE))
+p + guides(fill = guide_colorbar(barheight = unit(4, "cm")))
+```  
+
+
+### 6.5 Limits  
+
+```{r}
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point()
+base
+base + scale_x_continuous(limits = c(1.5, 2.5))
+#> Warning: Removed 2 rows containing missing values (geom_point).
+base + scale_x_continuous(limits = c(0, 4))
+base + xlim(0, 4)
+base + xlim(4, 0)
+base + lims(x = c(0, 4))
+```  
+
+To eliminate this space, set expand = c(0, 0). This is useful in conjunction with geom_raster():  
+```{r}
+ggplot(faithfuld, aes(waiting, eruptions)) + 
+  geom_raster(aes(fill = density)) +
+  theme(legend.position = "none")
+ggplot(faithfuld, aes(waiting, eruptions)) +
+  geom_raster(aes(fill = density)) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme(legend.position = "none")
+
+```  
+ 
+ 
+The default is scales::censor() which replaces any value outside the limits with NA. Another option is scales::squish() which squishes all values into the range:
+```{r}
+df <- data.frame(x = 1:5)
+p <- ggplot(df, aes(x, 1)) + geom_tile(aes(fill = x), colour = "white")
+p
+p + scale_fill_gradient(limits = c(2, 4))
+p + scale_fill_gradient(limits = c(2, 4), oob = scales::squish)
+```  
+
+
+### 6.6 Scales toolbox  
+#### 6.6.1 Continuous position scales  
+```{r}
+# Convert from fuel economy to fuel consumption
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  scale_y_continuous(trans = "reciprocal")
+# Log transform x and y axes
+ggplot(diamonds, aes(price, carat)) +
+  geom_bin2d() +
+  scale_x_continuous(trans = "log10") +
+  scale_y_continuous(trans = "log10")
+
+
+base <- ggplot(economics, aes(date, psavert)) +
+  geom_line(na.rm = TRUE) +
+  labs(x = NULL, y = NULL)
+base # Default breaks and labels
+base + scale_x_date(date_labels = "%y", date_breaks = "5 years")
+
+base + scale_x_date(
+  limits = as.Date(c("2004-01-01", "2005-01-01")),
+  date_labels = "%b %y",
+  date_minor_breaks = "1 month"
+  )
+base + scale_x_date(
+  limits = as.Date(c("2004-01-01", "2004-06-01")),
+  date_labels = "%m/%d",
+  date_minor_breaks = "2 weeks"
+  )
+
+
+```  
+
+
+#### 6.6.2 Color  
+We’ll use a modern attempt called the `hcl` colour
+space, which has three components of h ue, c hroma and l
+uminance:  
+
+`Hue` is a number between 0 and 360 (an angle) which gives the “colour” of the colour: like blue, red, orange, etc.  
+
+`Luminance` is the lightness of the colour. A luminance of 0 produces black, and a luminance of 1 produces white.  
+
+`Chroma` is the purity of a colour. A chroma of 0 is grey, and the maximum value of chroma varies with luminance.  
+
+##### 6.6.2.1 Continuous  
+```{r}
+erupt <- ggplot(faithfuld, aes(waiting, eruptions, fill = density)) +
+  geom_raster() +
+  scale_x_continuous(NULL, expand = c(0, 0)) +
+  scale_y_continuous(NULL, expand = c(0, 0)) +
+  theme(legend.position = "none")
+
+erupt
+erupt + scale_fill_gradient(low = "white", high = "black")
+erupt + scale_fill_gradient(
+  low = munsell::mnsl("5G 9/2"),
+  high = munsell::mnsl("5G 6/8")
+  )
+
+
+mid <- median(faithfuld$density)
+erupt + scale_fill_gradient2(midpoint = mid)
+
+erupt + scale_fill_gradientn(colours = terrain.colors(7))
+erupt + scale_fill_gradientn(colours = colorspace::heat_hcl(7))
+erupt + scale_fill_gradientn(colours = colorspace::diverge_hcl(7))
+
+erupt + scale_fill_distiller()
+erupt + scale_fill_distiller(palette = "RdPu")
+erupt + scale_fill_distiller(palette = "YlOrBr")
+```  
+
+```{r}
+df <- data.frame(x = 1, y = 1:5, z = c(1, 3, 2, NA, 5))
+p <- ggplot(df, aes(x, y)) + geom_tile(aes(fill = z), size = 5)
+p
+# Make missing colours invisible
+p + scale_fill_gradient(na.value = NA)
+# Customise on a black and white scale
+p + scale_fill_gradient(low = "black", high = "white", na.value = "red")
+```  
+
+##### 6.6.2.2 Discrete  
+```{r}
+df <- data.frame(x = c("a", "b", "c", "d"), y = c(3, 4, 1, 2))
+bars <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") +
+  labs(x = NULL, y = NULL) + 
+  theme(legend.position = "none")
+
+bars
+bars + scale_fill_hue(c = 40)
+bars + scale_fill_hue(h = c(180, 300))
+
+bars + scale_fill_brewer(palette = "Set1")
+bars + scale_fill_brewer(palette = "Set2")
+bars + scale_fill_brewer(palette = "Accent")
+
+bars + scale_fill_grey()
+bars + scale_fill_grey(start = 0.5, end = 1)
+bars + scale_fill_grey(start = 0, end = 0.5)
+
+
+```  
+
+
+```{r}
+#Bright colours work best with points
+df <- data.frame(x = 1:3 + runif(30), y = runif(30), z = c("a", "b", "c"))
+point <- ggplot(df, aes(x, y)) +
+  geom_point(aes(colour = z)) +
+  theme(legend.position = "none") +
+  labs(x = NULL, y = NULL)
+point + scale_colour_brewer(palette = "Set1")
+point + scale_colour_brewer(palette = "Set2")
+point + scale_colour_brewer(palette = "Pastel1")
+
+
+# Subtler colours work better with areas
+df <- data.frame(x = 1:3, y = 3:1, z = c("a", "b", "c"))
+area <- ggplot(df, aes(x, y)) +
+  geom_bar(aes(fill = z), stat = "identity") +
+  theme(legend.position = "none") +
+  labs(x = NULL, y = NULL)
+area + scale_fill_brewer(palette = "Set1")
+area + scale_fill_brewer(palette = "Set2")
+area + scale_fill_brewer(palette = "Pastel1")
+```  
+
+
+#### 6.6.3 The manual discrete scale  
+```{r}
+plot <- ggplot(msleep, aes(brainwt, bodywt)) +
+  scale_x_log10() +
+  scale_y_log10()
+plot
+plot +
+  geom_point(aes(colour = vore)) +
+  scale_colour_manual(
+    values = c("red", "orange", "green", "blue"),
+    na.value = "grey50"
+    )
+
+colours <- c(
+  carni = "red",
+  insecti = "orange",
+  herbi = "green",
+  omni = "blue"
+  )
+plot +
+  geom_point(aes(colour = vore)) +
+  scale_colour_manual(values = colours)
+
+
+huron <- data.frame(year = 1875:1972, level = as.numeric(LakeHuron))
+ggplot(huron, aes(year)) +
+  geom_line(aes(y = level + 5), colour = "red") +
+  geom_line(aes(y = level - 5), colour = "blue")
+
+
+ggplot(huron, aes(year)) +
+  geom_line(aes(y = level + 5, colour = "above")) +
+  geom_line(aes(y = level - 5, colour = "below"))
+  
+
+ggplot(huron, aes(year)) +
+  geom_line(aes(y = level + 5, colour = "above")) +
+  geom_line(aes(y = level - 5, colour = "below")) +
+  scale_colour_manual("Direction",
+                      values = c("above" = "red", "below" =
+                                   "blue")
+                      )
+```
+
+
+
+#### 6.6.4 The identity scale  
+
+```{r}
+ggplot(luv_colours, aes(u, v)) +
+  geom_point(aes(colour = col), size = 3) +
+  scale_color_identity() +
+  coord_equal()
+```  
+
+
+## Chapter 7 Positioning  
+### Introduction  
+
+### 7.2 Faceting  
+`facet_null()` a single plot  
+
+#### 7.2.1 `facet_wrap()`  
+`as.table` controls whether the facets are laid out like a table (TRUE), with highest values at the bottom-right, or a plot (FALSE), with the highest values at the
+top-right. `dir` controls the direction of wrap: horizontal or vertical.
+
+```{r}
+library(ggplot2)
+mpg2 <- subset(mpg, cyl != 5 & drv %in% c("4", "f") & class != "2seater")
+base <- ggplot(mpg2, aes(displ, hwy)) +
+  geom_blank() +
+  xlab(NULL) +
+  ylab(NULL)
+base + facet_wrap(~class, ncol = 3)
+base + facet_wrap(~class, ncol = 3, as.table = FALSE)
+
+base + facet_wrap(~class, nrow = 3)
+base + facet_wrap(~class, nrow = 3, dir = "v")
+```  
+
+#### 7.2.2 `facet_grid()`  
+```{r}
+base + facet_grid(. ~ cyl)
+base + facet_grid(drv ~ .)
+base + facet_grid(drv ~ cyl)
+```  
+
+#### 7.2.3 Controlling scales  
+
+```{r}
+p <- ggplot(mpg2, aes(cty, hwy)) +
+  geom_abline() +
+  geom_jitter(width = 0.1, height = 0.1)
+p + facet_wrap(~cyl)
+p + facet_wrap(~cyl, scales = "free")
+```  
+
+```{r}
+economics_long
+ggplot(economics_long, aes(date, value)) + 
+  geom_line() +
+  facet_wrap(~variable, scales = "free_y", ncol = 1)
+
+
+mpg2$model <- reorder(mpg2$model, mpg2$cty)
+mpg2$manufacturer <- reorder(mpg2$manufacturer,-mpg2$cty)
+ggplot(mpg2, aes(cty, model)) +
+  geom_point() +
+  facet_grid(manufacturer ~ ., scales = "free", space = "free") +
+  theme(strip.text.y = element_text(angle = 0))
+```  
+
+
+#### 7.2.4 Missing faceting variables  
+
+```{r}
+df1 <- data.frame(x = 1:3, y = 1:3, gender = c("f", "f", "m"))
+df2 <- data.frame(x = 2, y = 2)
+ggplot(df1, aes(x, y)) +
+  geom_point(data = df2, colour = "red", size = 2) +
+  geom_point() +
+  facet_wrap(~gender)
+```  
+
+
+#### 7.2.5 Gruoping vs. faceting  
+```{r}
+library(dplyr)
+df <- data.frame(
+  x = rnorm(120, c(0, 2, 4)),
+  y = rnorm(120, c(1, 2, 1)),
+  z = letters[1:3]
+)
+ggplot(df, aes(x, y)) +
+  geom_point(aes(colour = z))
+
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  facet_wrap(~z)
+
+df_sum <- df %>%
+  group_by(z) %>%
+  summarise(x = mean(x), y = mean(y)) %>%
+  rename(z2 = z)
+
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_point(aes(colour = z2), data = df_sum, size = 4) +
+  facet_wrap(~z)
+# put all the data in the background of each panel:
+df2 <- select(df, -z)
+ggplot(df, aes(x, y)) +
+  geom_point(data = df2, colour = "grey70") +
+  geom_point(aes(colour = z)) +
+  facet_wrap(~z)
+```  
+
+#### 7.2.6 Continuous variables  
+
+```{r}
+# Bins of width 1
+mpg2$disp_w <- cut_width(mpg2$displ, 1)
+# Six bins of equal length
+mpg2$disp_i <- cut_interval(mpg2$displ, 6)
+# Six bins containing equal numbers of points
+mpg2$disp_n <- cut_number(mpg2$displ, 6)
+
+plot <- ggplot(mpg2, aes(cty, hwy)) +
+  geom_point() +
+  labs(x = NULL, y = NULL)
+plot + facet_wrap(~disp_w, nrow = 1)
+plot + facet_wrap(~disp_i, nrow = 1)
+plot + facet_wrap(~disp_n, nrow = 1)
+```   
+
+
+### 7.3 Coordinate systems  
+There are two types of coordinate system. Linear coordinate system preserve the shape of geoms:  
+
+`coord_cartesian()`: the default Cartesian coordinate system, where the 2d position of an element is given by the combination of the x and y positions.  
+
+`coord_fixed()`: Cartesian coordinate system with a fixed aspect ratio.  
+
+`coord_flip()`: Cartesian coordinate system with x and y axes flipped.  
+
+On the other hand, non-linear coordinate can change the shapes: a straight line may no longer be straight. The closest distance between two points is no longer be a straight line.  
+
+`coord_map()/coord_quickmap()`: Map projections.  
+
+`coord_polar()`: Polar coordinates.  
+
+`coord_trans()`: Apply arbitrary transformations to x and y positions, after the data has been processed by the stat.  
+
+### 7.4 Linear coordinate systems  
+#### 7.4.1 Zooming into a plot with `coord_cartesian()`  
+
+The key difference is how the limits work: when setting scale limits, any data outside the limits is thrown away; but when setting coordinate system limits we still use all the data, but we only display a small region of the plot. Setting coordinate system limits is like looking at the plot under a magnifying glass.  
+
+```{r}
+base <- ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth()
+# Full dataset
+base
+# Scaling to 5--7 throws away data outside that range
+base + scale_x_continuous(limits = c(5, 7))
+# Zooming to 5--7 keeps all the data but only shows some of it
+base + coord_cartesian(xlim = c(5, 7))
+```  
+
+#### 7.4.2 Flipping the axes with `coord_flip()`  
+```{r}
+ggplot(mpg, aes(displ, cty)) +
+  geom_point() +
+  geom_smooth()
+# Exchanging cty and displ rotates the plot 90 degrees, but the smooth
+# is fit to the rotated data.
+ggplot(mpg, aes(cty, displ)) +
+  geom_point() +
+  geom_smooth()
+
+# coord_flip() fits the smooth to the original data, and then rotates
+# the output
+ggplot(mpg, aes(displ, cty)) +
+  geom_point() +
+  geom_smooth() +
+  coord_flip()
+
+```  
+
+#### 7.4.3 Equal scales with `coord_equal()`  
+
+`coord_equal()` fixes the ratio of length on the x and y axes. The default ratio, ensures that the x and y axes have equal scales  
+
+### 7.5 Non-linear coordinate systems  
+```{r}
+rect <- data.frame(x = 50, y = 50)
+line <- data.frame(x = c(1, 200), y = c(100, 1))
+base <- ggplot(mapping = aes(x, y)) +
+  geom_tile(data = rect, aes(width = 50, height = 50)) +
+  geom_line(data = line) +
+  xlab(NULL) + ylab(NULL)
+base
+base + coord_polar("x")
+base + coord_polar("y")
+base + coord_flip()
+base + coord_trans(y = "log10")
+base + coord_equal()
+```  
+
+Firstly, the parameterisation of each geom is changed to
+be purely location-based, rather than location and dimension based.  
+
+
+```{r}
+df <- data.frame(r = c(0, 1), theta = c(0, 3 / 2 * pi))
+ggplot(df, aes(r, theta)) +
+  geom_line() +
+  geom_point(size = 2, colour = "red")
+
+interp <- function(rng, n) {
+  seq(rng[1], rng[2], length = n)
+  }
+
+munched <- data.frame(
+  r = interp(df$r, 15),
+  theta = interp(df$theta, 15)
+  )
+ggplot(munched, aes(r, theta)) +
+  geom_line() +
+  geom_point(size = 2, colour = "red")
+
+transformed <- transform(munched,
+                         x = r * sin(theta),
+                         y = r * cos(theta)
+                         )
+
+ ggplot(transformed, aes(x, y)) +
+     geom_path() +
+     geom_point(size = 2, colour = "red") +
+     coord_equal()
+
+```  
+
+
+#### 7.5.1 Transformations with `coord_trans()`  
+```{r}
+# Linear model on original scale is poor fit
+base <- ggplot(diamonds, aes(carat, price)) +
+  stat_bin2d() +
+  geom_smooth(method = "lm") +
+  xlab(NULL) +
+  ylab(NULL) +
+  theme(legend.position = "none")
+base
+# Better fit on log scale, but harder to interpret
+base +
+  scale_x_log10() +
+  scale_y_log10()
+# Fit on log scale, then backtransform to original.
+# Highlights lack of expensive diamonds with large carats
+pow10 <- scales::exp_trans(10)
+base +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_trans(x = pow10, y = pow10)
+```   
+
+
+#### 7.5.2 Polor coordinates with `coord_polar()`  
+
+```{r}
+base <- ggplot(mtcars, aes(factor(1), fill = factor(cyl))) +
+  geom_bar(width = 1) +
+  theme(legend.position = "none") +
+  scale_x_discrete(NULL, expand = c(0, 0)) +
+  scale_y_continuous(NULL, expand = c(0, 0))
+# Stacked barchart
+base
+
+# Pie chart
+base + coord_polar(theta = "y")
+# The bullseye chart
+base + coord_polar()
+```  
+
+
+#### 7.5.3 Map projections with `coord_map()`  
+```{r}
+#library(map_data)
+# Prepare a map of NZ
+nzmap <- ggplot(map_data("nz"), aes(long, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black") +
+  xlab(NULL) + 
+  ylab(NULL)
+# Plot it in cartesian coordinates
+nzmap
+# With the aspect ratio approximation
+nzmap + coord_quickmap()
+
+
+world <- map_data("world")
+worldmap <- ggplot(world, aes(long, lat, group = group)) +
+  geom_path() +
+  scale_y_continuous(NULL, breaks = (-2:3) * 30, labels = NULL) +
+  scale_x_continuous(NULL, breaks = (-4:4) * 45, labels = NULL)
+
+
+worldmap + coord_map()
+   # Some crazier projections
+worldmap + coord_map("ortho")
+worldmap + coord_map("stereographic")
+```
+
+
+
+
